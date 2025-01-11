@@ -1,119 +1,105 @@
-import {useState, useEffect} from 'react'
-import {
-    MapContainer,
-    TileLayer,
-    Marker,
-    Popup
-} from 'react-leaflet'
-import L from 'leaflet';
-import "./map.css"
+import { useState, useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { ClipLoader } from "react-spinners";
+import Leaflet from "leaflet";
 import axios from "axios";
-import { ClipLoader } from 'react-spinners';
-import markerIcon from '../assets/location.svg';
-
-const calculateIconAnchor = (cityName) => {
-  const baseOffset = 19; // 5 mm in Pixel (bei 96 DPI)
-  const lengthFactor = cityName.length * 2; // Faktor basierend auf der Länge des Namens
-  return [lengthFactor, baseOffset]; // [horizontal (x), vertikal (y)]
-};
-const location = (cityName) => new L.Icon({
-  iconUrl: markerIcon,
-  iconSize: new L.Point(25, 50),
-  iconAnchor: calculateIconAnchor(cityName)
-});
-
-// const cities = [
-//   { name: "berlin", lat: "52.520008", lon: "13.404954" },
-//   { name: "london", lat: "51.507351", lon: "-0.127758" },
-//   { name: "paris", lat: "48.856613", lon: "2.352222" },
-//   { name: "washingtondc", lat: "38.892059", lon: "-77.019913" },
-//   { name: "ankara", lat: "39.925533", lon: "32.866287" },
-// ]
+import markerIcon from "../assets/location.svg";
+import cities from "./cities";
+import "./map.css";
 
 const APIKEY = import.meta.env.VITE_APIKEY;
 
-const Map = () => {
-  let selected 
-  
-  const [loading, setLoading] = useState(false)
-  const [city, setCity] = useState([])
-  const [center, setCenter] = useState([52.520008, 13.404954])
-  const [selectedCity, setSelectedCity]=useState("berlin")
-  
-  // const wetherData = async () => {
-  //   try {
-  //     await axios.get()
-  //       .then(res => {
-  //         if (res.status === 200){
-  //           setCity(res.data)
-  //           console.log(res.data)
-  //         }
-  //       })     
-  //   } catch (error) {
-  //     console.log(error)
-  //   }
-  // }
+const location = (cityName) =>
+  new Leaflet.Icon({
+    iconUrl: markerIcon,
+    iconSize: [30, 50],
+    iconAnchor: [cityName.length * 2, 0],
+  });
+
+const ChangeView = ({ center }) => {
+  const map = useMap();
+  map.setView(center, 13);
+  return null;
+};
+
+export default function Map() {
+  const [loading, setLoading] = useState(false);
+  const [city, setCity] = useState("Berlin");
+  const [center, setCenter] = useState([52.520008, 13.404954]);
+  const [windDeg, setWindDeg] = useState(0);
+  const [temperature, setTemperature] = useState(0);
+  const [selectedCity, setSelectedCity] = useState("Berlin");
 
   useEffect(() => {
-    selected = document.getElementById("selection")
-    // console.log(selected)
-    // console.log("value selectedCity: "+selectedCity)
-    
     const fetchCity = async () => {
       setLoading(true);
       try {
         const response = await axios.get(
           `https://api.openweathermap.org/data/2.5/weather?q=${selectedCity}&appid=${APIKEY}&units=metric`
         );
-        console.log(response.data)
-        setCity(response.data);
-        setCenter([response.data.coord.lat, response.data.coord.lon])
+        const data = response.data;
+        setCity(data.name);
+        setCenter([data.coord.lat, data.coord.lon]);
+        setWindDeg(data.wind.deg + 180);
+        setTemperature(data.main);
       } catch (error) {
-        console.error(error);
+        console.error("Error fetching city data:", error);
       } finally {
         setLoading(false);
-      }      
+      }
     };
-    fetchCity()  
+
+    fetchCity();
   }, [selectedCity]);
 
-  // city.length === 0 ?
-  //   null :
-  //   console.log(city)
+  const handleCityChange = (e) => {
+    setSelectedCity(e.target.value);
+  };
 
   return (
-    <>      
-      <h1 className='fontmed'> Das Wetter in</h1>
-      <select id="selection" onChange={e => {
-        console.log(e.target.value)
-        setSelectedCity(e.target.value)        
-      }} className='select' name="cities">
-          <option value="berlin">Berlin</option>
-          <option value="london">London</option>
-          <option value="paris">Paris</option>
-          <option value="ankara">Ankara</option>
-      </select>        
-      <h1 style={{marginLeft:"1rem"}} className='fontmed'>(Für Details klick das unten gezeigte Standortsymbol)</h1>
-      {city.length === 0 ?
-        (<p>Loading</p>):(
-      <MapContainer className='container-map' center={center} zoom={13} key={JSON.stringify(center)}>
+    <>
+      <header>
+        <h1>Select your Location</h1>
+
+        <select id="selection" onChange={handleCityChange} className="select">
+          {cities.map((city, index) => (
+            <option key={index} value={city.name}>
+              {city.name}
+            </option>
+          ))}
+        </select>
+      </header>
+      <p className="tip">Click on the location icon for weather data.</p>
+
+      {loading ? (
+        <ClipLoader />
+      ) : (
+        <MapContainer className="container-map" center={center} zoom={13}>
+          <ChangeView center={center} />
           <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; 
+            <a href="https://www.openstreetmap.org/copyright">
+              // OpenStreetMap //
+            </a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-        <Marker position={[city.coord.lat, city.coord.lon]} icon={location(selectedCity)}>
-              <Popup>
-                <h1>Atuell: { Math.trunc(city.main.temp)+"°C"}</h1>
-                <h2>min: {Math.trunc(city.main.temp_min) + "°C"}</h2>
-                <h2>max: { Math.trunc(city.main.temp_max)+"°C"}</h2>
-              </Popup>
+          <Marker position={center} icon={location(selectedCity)}>
+            <Popup>
+              <div className="weatherData">
+                <div>Current: {Math.floor(temperature.temp)}°C</div>
+                <div>Min: {Math.floor(temperature.temp_min)}°C</div>
+                <div>Max: {Math.floor(temperature.temp_max)}°C</div>
+                <div
+                  className="windDeg"
+                  style={{ "--rotation": windDeg + "deg" }}
+                >
+                  Wind:
+                </div>
+              </div>
+            </Popup>
           </Marker>
         </MapContainer>
       )}
-  </>
-  )
+    </>
+  );
 }
-
-export default Map
-
-// `https://api.openweathermap.org/data/2.5/weather?lat=${coord.lat}&lon=${coord.lon}&appid=${apiKey}`

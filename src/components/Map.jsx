@@ -8,7 +8,6 @@ import {
 import L from 'leaflet';
 import "./map.css"
 import axios from "axios";
-import { ClipLoader } from 'react-spinners';
 import markerIcon from '../assets/location.svg';
 
 const calculateIconAnchor = (cityName) => {
@@ -33,9 +32,6 @@ const location = (cityName) => new L.Icon({
 const APIKEY = import.meta.env.VITE_APIKEY;
 
 const Map = () => {
-  let selected 
-  
-  const [loading, setLoading] = useState(false)
   const [city, setCity] = useState([])
   const [center, setCenter] = useState([52.520008, 13.404954])
   const [selectedCity, setSelectedCity]=useState("berlin")
@@ -55,12 +51,7 @@ const Map = () => {
   // }
 
   useEffect(() => {
-    selected = document.getElementById("selection")
-    // console.log(selected)
-    // console.log("value selectedCity: "+selectedCity)
-    
     const fetchCity = async () => {
-      setLoading(true);
       try {
         const response = await axios.get(
           `https://api.openweathermap.org/data/2.5/weather?q=${selectedCity}&appid=${APIKEY}&units=metric`
@@ -70,9 +61,7 @@ const Map = () => {
         setCenter([response.data.coord.lat, response.data.coord.lon])
       } catch (error) {
         console.error(error);
-      } finally {
-        setLoading(false);
-      }      
+      }
     };
     fetchCity()  
   }, [selectedCity]);

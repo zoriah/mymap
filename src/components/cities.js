@@ -1,4 +1,4 @@
-export default cities = [
+const cities = [
     {
         name: "Berlin",
         lat: 52.520008,
@@ -27,3 +27,5 @@ export default cities = [
         long: 13.404954,
     },
 ]
+
+export default cities

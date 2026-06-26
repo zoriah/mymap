@@ -1,7 +1,5 @@
 # Provide a functional API-Key from OpenWetherMap:
 
-##
-
 ### This is a Webapp made in the End of 2024 and is since then not maintained anymore!
 
 ##

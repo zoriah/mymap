@@ -8,4 +8,4 @@
 
 **2. Put in:**
 
-- VITE_APIKEY=**YOURE APIKEY**
+- VITE_APIKEY=**YOURE APIKEY (via https://openweathermap.org)**
